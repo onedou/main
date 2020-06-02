@@ -464,8 +464,11 @@ function TextControl:vValue()
 end
 
 function TextControl:mousePressEvent(e)
+	--echo("mousePressEvent");
+
 	local clip = self:ClipRegion();
 	if(e:button() == "left" and clip:contains(e:pos())) then
+	
 		local line = self:yToLine(e:pos():y());
 		local text = self:GetLineText(line);
 		local pos = self:xToPos(text, e:pos():x());
@@ -497,9 +500,29 @@ function TextControl:mousePressEvent(e)
 end
 
 function TextControl:mouseReleaseEvent(event)
+	--echo("mouseReleaseEvent");
+
 	self.isLeftMouseDown = false;
 	if(event:button() == "right") then
 		self:rightClicked(event);
+	elseif (event:button() == "left") and (System.os.GetPlatform() == 'ios' or System.os.GetPlatform() == 'android') then
+
+		local line = math.ceil(event:pos():y()/self.lineHeight);
+		if(line>=1 and line<=(#self.items)) then
+			local text = self:GetLineText(line);
+			if(text) then
+				local pos = self:xToPos(text, event:pos():x());
+				if(pos and pos>=0 and pos < text:length()) then
+					local from,to = text:wordPosition(pos);
+					if(from and from < to) then
+						local word = text:substr(from+1, to);
+						self:setMouseOverWord(word, text, from, to)
+						return
+					end
+				end
+			end
+		end
+		self:setMouseOverWord(nil)
 	end
 end
 
@@ -520,7 +543,11 @@ function TextControl:getMouseOverWordInfo()
 end
 
 function TextControl:mouseMoveEvent(e)
-	if(e:button() == "left" and self.isLeftMouseDown) then
+	--echo("mouseMoveEvent");
+
+
+	if(e:button() == "left" or self.isLeftMouseDown) then
+	
 		local select = true;
 		local line = self:yToLine(e:pos():y());
 		local text = self:GetLineText(line);
@@ -529,6 +556,7 @@ function TextControl:mouseMoveEvent(e)
 
 		e:accept();
 	else
+
 		local line = math.ceil(e:pos():y()/self.lineHeight);
 		if(line>=1 and line<=(#self.items)) then
 			local text = self:GetLineText(line);
